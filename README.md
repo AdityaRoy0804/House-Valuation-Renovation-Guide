@@ -5,7 +5,6 @@ Interactive User Interface (UI): Built using Shiny to collect user input for hou
 Data Preprocessing Pipeline: Clean the raw dataset by handling missing values, encoding categorical variables, scaling numerical features, and splitting data into training and test sets.
 Modeling: Developed using machine learning algorithms (e.g., linear regression, random forests) to predict house prices.
 Model Evaluation: Metrics such as R-squared, RMSE, and MAE to evaluate model performance.
-Model Deployment: Hosted on shinyapps.io, providing easy access to predictions through a web interface.
 Data Visualization: Visual representations of house price trends and correlations between features using ggplot2.
 
 🛠 Technologies & Tools:
@@ -28,12 +27,5 @@ Model Selection: Multiple algorithms (e.g., Linear Regression, Random Forests) a
 Training: The chosen model is trained on the training set using caret package for cross-validation and hyperparameter tuning.
 Evaluation: The model's performance is evaluated using metrics like R-squared, RMSE, and MAE on the test set to ensure the accuracy and robustness of predictions.
 
-🌐 Model Deployment:
-Deployment: The app is deployed on shinyapps.io, allowing users to access the app from anywhere with an internet connection.
-Model Input: Users can input house characteristics (e.g., square footage, number of rooms, etc.) and instantly receive a predicted house price.
-
 📈 Data Visualization:
 The app provides dynamic charts and graphs that showcase the relationship between different property features and their impact on price. These visualizations help users understand market trends, correlations, and patterns in the housing data.
-
-🔗 Live Demo:
-App URL: https://aditya-kumar-roy.shinyapps.io/pricepredx/
