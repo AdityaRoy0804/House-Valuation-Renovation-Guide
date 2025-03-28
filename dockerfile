@@ -1,17 +1,38 @@
-# Use the official R image with Shiny pre-installed
+# Use rocker/shiny as the base image (pre-configured for Shiny apps)
 FROM rocker/shiny:latest
 
-# Copy the Shiny app files into the container
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libxt-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install R packages
+RUN R -e "install.packages('ggplot2')"
+RUN R -e "install.packages('dplyr')"
+RUN R -e "install.packages('caTools')"
+RUN R -e "install.packages('car')"
+RUN R -e "install.packages('caret')"
+RUN R -e "install.packages('shiny')"
+RUN R -e "install.packages('shinythemes')"
+RUN R -e "install.packages('shinyjs')"
+RUN R -e "install.packages('plotly')"
+RUN R -e "install.packages('randomForest')"
+RUN R -e "install.packages('tidyverse')"
+RUN R -e "install.packages('DALEX')"
+
+# Copy your app's R code into the container
 COPY . /srv/shiny-server/
 
-# Set the working directory to the app directory
-WORKDIR /srv/shiny-server/
+# Set the working directory
+WORKDIR /srv/shiny-server
 
-# Install any additional R packages (if necessary)
-RUN R -e "install.packages('shiny')"
-
-# Expose the port that Shiny uses (default is 3838)
+# Expose the port Shiny uses
 EXPOSE 3838
 
-# Start the Shiny app
-CMD ["R", "-e", "shiny::runApp('/srv/shiny-server', host='0.0.0.0', port=3838)"]
+# Run the Shiny app
+CMD ["R", "-e", "shiny::runApp('/srv/shiny-server')"]
