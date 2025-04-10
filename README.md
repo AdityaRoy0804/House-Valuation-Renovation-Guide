@@ -1,5 +1,8 @@
 🏡 House Revaluation App
 A comprehensive Shiny web application that estimates house prices based on key property features, using machine learning models for accurate predictions.This app allows users to input property features such as location, square footage, number of bedrooms, and more to predict house prices. It provides an interactive interface, data preprocessing pipeline, and model deployment, making it an excellent tool for understanding housing price dynamics.
+
+Model URL : https://aditya-kumar-roy.shinyapps.io/HousePredX/
+
 🔍 Key Features:
 Interactive User Interface (UI): Built using Shiny to collect user input for house features (e.g., area, number of rooms, neighborhood).
 Data Preprocessing Pipeline: Clean the raw dataset by handling missing values, encoding categorical variables, scaling numerical features, and splitting data into training and test sets.
@@ -29,3 +32,6 @@ Evaluation: The model's performance is evaluated using metrics like R-squared, R
 
 📈 Data Visualization:
 The app provides dynamic charts and graphs that showcase the relationship between different property features and their impact on price. These visualizations help users understand market trends, correlations, and patterns in the housing data.
+
+Model Deployment:
+Model is deployed at shinyapps.io server and anyone with internet access can use it.
