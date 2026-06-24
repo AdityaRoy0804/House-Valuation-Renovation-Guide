@@ -8,14 +8,19 @@ library(dplyr)
 
 # Load trained model and sample data
 model <- readRDS("rf_tuned.rds")
-df <- read.csv("AmesHousing.csv")  # This should contain Bldg.Type and House.Style for choices
+df <- read.csv("AmesHousing.csv")
 
 # Define UI
 ui <- fluidPage(
   theme = shinytheme("darkly"),
-  
-  titlePanel(tags$h2("🏡 AI-Powered Home Valuation", align = "center")),
-  
+
+  # FIX 1: titlePanel(windowTitle=) sets the browser tab title cleanly,
+  # while the visible heading uses tags$h2 inside a div for centering.
+  titlePanel(
+    title = div(tags$h2("🏡 AI-Powered Home Valuation", style = "text-align:center;")),
+    windowTitle = "HousePredX – AI Home Valuation"
+  ),
+
   sidebarLayout(
     sidebarPanel(
       h4("🏠 Property Details"),
@@ -31,11 +36,11 @@ ui <- fluidPage(
       selectInput("kitchen_qual", "Kitchen Quality:", choices = c("Fa", "TA", "Gd", "Ex")),
       selectInput("bldg_type", "Building Type:", choices = unique(df$Bldg.Type)),
       selectInput("house_style", "House Style:", choices = unique(df$House.Style)),
-      
+
       actionButton("predict", "🔮 Predict Price", class = "btn-primary"),
       actionButton("recommend", "💡 Renovation Recommendations", class = "btn-info")
     ),
-    
+
     mainPanel(
       tags$h3("🏡 Property Valuation"),
       textOutput("predicted_price"),
@@ -48,46 +53,53 @@ ui <- fluidPage(
       hr(),
       tags$h3("📈 ROI Analysis - Renovation Impact"),
       textOutput("roi_estimate"),
-      plotlyOutput("roi_plot")
+      plotlyOutput("roi_plot"),
+      hr(),
+
+      # FIX 2: downloadButton wired to a downloadHandler — renders the
+      # Rmd template with live reactive values and returns a real PDF.
+      downloadButton("download_report", "⬇️ Download PDF Report", class = "btn-success")
     )
   )
 )
 
 # Define Server
 server <- function(input, output, session) {
-  
+
   predicted_price <- reactiveVal(NULL)
   renovation_text <- reactiveVal(NULL)
   price_after_renovation <- reactiveVal(NULL)
-  
+  roi_val <- reactiveVal(0)
+
   observeEvent(input$predict, {
     input_data <- data.frame(
-      Lot.Area = input$lot_area,
-      Gr.Liv.Area = input$gr_liv_area,
-      Overall.Qual = input$overall_qual,
-      Year.Built = input$year_built,
-      Full.Bath = input$full_bath,
-      Garage.Cars = input$garage_cars,
-      Bedroom.AbvGr = input$bedroom_abvgr,
-      Exter.Qual = factor(input$exterior_qual, levels = c("Po", "Fa", "TA", "Gd", "Ex"), ordered = TRUE),
-      Bsmt.Cond = factor(input$bsmt_cond, levels = c("Po", "Fa", "TA", "Gd", "Ex"), ordered = TRUE),
-      Kitchen.Qual = factor(input$kitchen_qual, levels = c("Fa", "TA", "Gd", "Ex"), ordered = TRUE),
-      Bldg.Type = factor(input$bldg_type, levels = unique(df$Bldg.Type)),
-      House.Style = factor(input$house_style, levels = unique(df$House.Style))
+      Lot.Area       = input$lot_area,
+      Gr.Liv.Area    = input$gr_liv_area,
+      Overall.Qual   = input$overall_qual,
+      Year.Built     = input$year_built,
+      Full.Bath      = input$full_bath,
+      Garage.Cars    = input$garage_cars,
+      Bedroom.AbvGr  = input$bedroom_abvgr,
+      Exter.Qual     = factor(input$exterior_qual, levels = c("Po","Fa","TA","Gd","Ex"), ordered = TRUE),
+      Bsmt.Cond      = factor(input$bsmt_cond,     levels = c("Po","Fa","TA","Gd","Ex"), ordered = TRUE),
+      Kitchen.Qual   = factor(input$kitchen_qual,  levels = c("Fa","TA","Gd","Ex"),      ordered = TRUE),
+      Bldg.Type      = factor(input$bldg_type,  levels = unique(df$Bldg.Type)),
+      House.Style    = factor(input$house_style, levels = unique(df$House.Style))
     )
-    
+
     pred <- predict(model, newdata = input_data)
     predicted_price(pred)
-    
+
     output$predicted_price <- renderText({
       paste("💰 Predicted Price: $", format(round(pred, 2), big.mark = ","))
     })
-    
-    # Feature importance
+
     output$feature_importance <- renderPlotly({
-      importance_data <- data.frame(Feature = rownames(varImp(model)), Importance = varImp(model)[, 1]) %>%
-        arrange(desc(Importance))
-      
+      importance_data <- data.frame(
+        Feature    = rownames(varImp(model)),
+        Importance = varImp(model)[, 1]
+      ) %>% arrange(desc(Importance))
+
       ggplot(importance_data, aes(x = reorder(Feature, Importance), y = Importance, fill = Feature)) +
         geom_bar(stat = "identity") +
         coord_flip() +
@@ -95,12 +107,12 @@ server <- function(input, output, session) {
         theme_minimal()
     })
   })
-  
+
   observeEvent(input$recommend, {
     if (!is.null(predicted_price())) {
       renovation <- ""
       roi <- 0
-      
+
       if (input$kitchen_qual == "Fa") {
         renovation <- "✅ Upgrading the kitchen will significantly increase home value.\n"
         roi <- roi + 0.10
@@ -108,17 +120,17 @@ server <- function(input, output, session) {
         renovation <- paste(renovation, "✅ Upgrading the interior of the kitchen will be beneficial.\n")
         roi <- roi + 0.10
       }
-      
+
       if (input$garage_cars == 0) {
         renovation <- paste(renovation, "✅ Adding a garage will significantly increase home value.\n")
         roi <- roi + 0.07
       }
-      
+
       if (input$gr_liv_area < (0.6 * input$lot_area)) {
         renovation <- paste(renovation, "✅ Consider utilizing lot space (garden, pool, fireplace).\n")
         roi <- roi + 0.05
       }
-      
+
       if (input$overall_qual < 3) {
         renovation <- paste(renovation, "✅ Wall proofing and basic upgrades recommended.\n")
         roi <- roi + 0.08
@@ -126,7 +138,7 @@ server <- function(input, output, session) {
         renovation <- paste(renovation, "✅ Moderate interior upgrades advised.\n")
         roi <- roi + 0.06
       }
-      
+
       if (input$bsmt_cond == "Po") {
         renovation <- paste(renovation, "✅ Improve basement condition for better value.\n")
         roi <- roi + 0.05
@@ -134,20 +146,21 @@ server <- function(input, output, session) {
         renovation <- paste(renovation, "✅ Enhancing basement will boost value.\n")
         roi <- roi + 0.05
       }
-      
+
       new_price <- predicted_price() * (1 + roi)
       renovation_text(renovation)
       price_after_renovation(new_price)
-      
+      roi_val(roi)
+
       output$renovation_suggestion <- renderText({ renovation })
       output$roi_estimate <- renderText({
         paste("📈 Estimated Price After Renovation: $", format(round(new_price, 2), big.mark = ","))
       })
-      
+
       output$roi_plot <- renderPlotly({
         renovation_costs <- data.frame(
           Renovation = c("Kitchen Upgrade", "Garage Addition", "Lot Utilization", "Overall Quality", "Basement"),
-          Impact = c(0.10, 0.07, 0.05, 0.08, 0.05)
+          Impact     = c(0.10, 0.07, 0.05, 0.08, 0.05)
         )
         ggplot(renovation_costs, aes(x = Renovation, y = Impact, fill = Renovation)) +
           geom_bar(stat = "identity") +
@@ -157,6 +170,36 @@ server <- function(input, output, session) {
       })
     }
   })
+
+  # FIX 2: downloadHandler renders the Rmd template to a temp PDF and
+  # streams it back to the browser. Guards against clicking before
+  # Predict / Recommend have been run.
+  output$download_report <- downloadHandler(
+    filename = function() {
+      paste0("HousePredX_Report_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".pdf")
+    },
+    content = function(file) {
+      # Validate that predictions exist before rendering
+      req(predicted_price(), price_after_renovation())
+
+      # Render into a temp dir so knitr doesn't pollute the working dir
+      tmp_dir    <- tempdir()
+      tmp_report <- file.path(tmp_dir, "report_template.Rmd")
+      file.copy("report_template.Rmd", tmp_report, overwrite = TRUE)
+
+      rmarkdown::render(
+        input       = tmp_report,
+        output_file = file,
+        params      = list(
+          predicted_price = as.numeric(predicted_price()),
+          new_price       = as.numeric(price_after_renovation()),
+          renovation_text = renovation_text(),
+          roi             = roi_val()
+        ),
+        envir = new.env(parent = globalenv())
+      )
+    }
+  )
 }
 
 # Run the app
