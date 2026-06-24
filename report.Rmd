@@ -1,0 +1,46 @@
+---
+title: "House Price Prediction Report"
+output: html_document
+params:
+  prediction: "₹0"
+  recommendation: "No recommendations provided."
+  recommended_price: "₹0"
+---
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 2em;
+  }
+  h1, h2 {
+    color: #2C3E50;
+  }
+  .section {
+    margin-bottom: 2em;
+  }
+  .price {
+    font-size: 24px;
+    color: #27AE60;
+    font-weight: bold;
+  }
+</style>
+
+# 🏠 House Price Prediction Report
+
+## 📊 Prediction Summary
+
+**Predicted Price:**  
+<span class="price">`r params$prediction`</span>
+
+---
+
+## 🛠️ Recommendations
+
+`r params$recommendation`
+
+---
+
+## 💰 Estimated Price After Recommendations
+
+**Estimated Price:**  
+<span class="price">`r params$recommended_price`</span>
