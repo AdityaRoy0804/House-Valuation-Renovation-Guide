@@ -1,37 +1,142 @@
-🏡 House Revaluation App
-A comprehensive Shiny web application that estimates house prices based on key property features, using machine learning models for accurate predictions.This app allows users to input property features such as location, square footage, number of bedrooms, and more to predict house prices. It provides an interactive interface, data preprocessing pipeline, and model deployment, making it an excellent tool for understanding housing price dynamics.
+# 🏡 HousePredX — AI-Powered House Valuation & Renovation Advisor
 
-Model URL : https://aditya-kumar-roy.shinyapps.io/HousePredX/
+> Predict property prices and discover high-ROI renovation strategies — powered by a tuned Random Forest model and deployed as an interactive Shiny web app.
 
-🔍 Key Features:
-Interactive User Interface (UI): Built using Shiny to collect user input for house features (e.g., area, number of rooms, neighborhood).
-Data Preprocessing Pipeline: Clean the raw dataset by handling missing values, encoding categorical variables, scaling numerical features, and splitting data into training and test sets.
-Modeling: Developed using machine learning algorithms (e.g., linear regression, random forests) to predict house prices.
-Model Evaluation: Metrics such as R-squared, RMSE, and MAE to evaluate model performance.
-Data Visualization: Visual representations of house price trends and correlations between features using ggplot2.
+**Live Demo → [aditya-kumar-roy.shinyapps.io/HousePredX](https://aditya-kumar-roy.shinyapps.io/HousePredX/)**
 
-🛠 Technologies & Tools:
-R Programming for data science tasks.
-Shiny for creating the interactive web application.
-Caret and randomForest for machine learning model training.
-ggplot2 for data visualization.
-AmesHousing dataset, containing historical housing data to train the model.
+---
 
-📊 Data Preprocessing & Model Pipeline:
-Loading Data: The dataset is loaded from a CSV file, which contains features like sale price, square footage, number of bedrooms, and more.
-Data Cleaning: Handling missing values using imputation or removal of rows/columns.
-Encoding categorical features like neighborhood, house type, etc., into numerical values using one-hot encoding.
-Feature scaling to standardize numerical values, ensuring all features contribute equally to the model.
-Feature Engineering: Creation of new features based on domain knowledge, such as price per square foot.
-Data Splitting: The dataset is split into training and testing sets, with 80% for training and 20% for testing.
+## What it does
 
-💻 Machine Learning Model:
-Model Selection: Multiple algorithms (e.g., Linear Regression, Random Forests) are tested to predict house prices.
-Training: The chosen model is trained on the training set using caret package for cross-validation and hyperparameter tuning.
-Evaluation: The model's performance is evaluated using metrics like R-squared, RMSE, and MAE on the test set to ensure the accuracy and robustness of predictions.
+HousePredX is a Shiny web application that estimates house prices in real-time based on property features, then recommends renovation strategies ranked by return on investment.
 
-📈 Data Visualization:
-The app provides dynamic charts and graphs that showcase the relationship between different property features and their impact on price. These visualizations help users understand market trends, correlations, and patterns in the housing data.
+Enter details like lot size, living area, quality ratings, and building type — the app runs your inputs through a pre-trained Random Forest model and returns:
 
-Model Deployment:
-Model is deployed at shinyapps.io server and anyone with internet access can use it.
+- **Predicted sale price** based on your property's features
+- **Feature importance chart** showing which factors drove the estimate
+- **Renovation recommendations** tailored to your property's weak points
+- **ROI analysis** quantifying the value gain from each suggested upgrade
+- **Downloadable PDF report** summarising the full valuation
+
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Language | R |
+| Web framework | Shiny + shinythemes |
+| ML model | Random Forest (`randomForest`, `ranger`) |
+| Hyperparameter tuning | `caret` with 5-fold cross-validation |
+| Visualisation | `plotly`, `ggplot2` |
+| Report generation | `rmarkdown` + `pagedown` (Chrome-based PDF, no LaTeX) |
+| Data wrangling | `dplyr` |
+| Dataset | Ames Housing (~2,900 residential properties) |
+| Containerisation | Docker (`rocker/shiny` base image) |
+| Deployment | shinyapps.io |
+
+---
+
+## Project structure
+
+```
+.
+├── app.r                         Shiny UI + server logic, download handler
+├── model.r                       Feature selection, RF training, hyperparameter tuning
+├── report_template.Rmd           R Markdown template rendered into the PDF report
+├── House_Price_Prediction.ipynb  Exploratory data analysis notebook
+├── AmesHousing.csv               Training dataset
+├── rf_tuned.rds                  Serialised trained model (loaded by app at startup)
+└── dockerfile                    Container configuration for self-hosted deployment
+```
+
+### How the pieces connect
+
+```
+User input (Shiny sidebar)
+        │
+        ▼
+rf_tuned.rds  ──►  predict()  ──►  Predicted sale price
+                                          │
+                              Feature importance plot (plotly)
+                                          │
+                              Renovation rule engine (app.r:126–191)
+                                    │            │
+                            Recommendations    ROI chart (plotly)
+                                          │
+                              report_template.Rmd
+                                          │
+                              pagedown::chrome_print()
+                                          │
+                                    PDF download
+```
+
+---
+
+## Running locally
+
+**Prerequisites:** R ≥ 4.1, the packages listed below, and Chrome (required by `pagedown`).
+
+```r
+install.packages(c(
+  "shiny", "shinythemes", "randomForest", "ranger",
+  "caret", "plotly", "ggplot2", "dplyr",
+  "rmarkdown", "pagedown", "scales"
+))
+```
+
+Launch the app:
+
+```bash
+R -e "shiny::runApp('app.r')"
+```
+
+Then open `http://127.0.0.1:<port>` as shown in the console.
+
+---
+
+## Docker deployment
+
+```bash
+# Build
+docker build -t housepredx .
+
+# Run
+docker run -p 3838:3838 housepredx
+```
+
+Navigate to `http://localhost:3838`.
+
+---
+
+## Reproducing the model
+
+The pre-trained model (`rf_tuned.rds`) is included so the app works without retraining. To retrain from scratch:
+
+```bash
+R < model.r
+```
+
+This runs the full pipeline: loads `AmesHousing.csv`, selects features by correlation threshold (|r| > 0.4), trains a Random Forest with `caret` + `ranger` using 5-fold cross-validation, tunes `mtry` and `min.node.size`, then writes the best model to `rf_tuned.rds`.
+
+---
+
+## Key features in detail
+
+**Price prediction** — The model was trained on 12 property features including living area, overall quality, year built, kitchen quality, basement condition, and building type. Feature importance is surfaced as an interactive bar chart so users understand what's driving their estimate.
+
+**Renovation advisor** — A rule-based engine evaluates the user's inputs against thresholds (e.g. kitchen quality `Fa`, garage capacity `0`, overall quality `< 7`) and surfaces targeted recommendations. Each recommendation has an associated ROI coefficient that feeds into the revised price estimate.
+
+**PDF report** — The download uses `pagedown::chrome_print()` to convert an `rmarkdown`-rendered HTML page to PDF via a headless Chrome instance. This avoids any LaTeX dependency and works on shinyapps.io without additional setup.
+
+---
+
+## Dataset
+
+[Ames Housing Dataset](https://www.kaggle.com/datasets/prevek18/ames-housing-dataset) — residential property sales in Ames, Iowa with 80 features covering structural characteristics, quality ratings, and sale conditions. The model uses a filtered subset of 12 high-correlation features.
+
+---
+
+## Author
+
+**Aditya Kumar Roy**
