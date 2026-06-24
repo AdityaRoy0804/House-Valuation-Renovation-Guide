@@ -1,6 +1,6 @@
 ---
 title: "🏡 House Valuation Report"
-output: pdf_document
+output: pagedown::html_paged
 params:
   predicted_price: NA
   new_price: NA
